@@ -217,8 +217,8 @@ const ctx = planetCanvas.getContext("2d");
 function drawPlanetTexture(light) {
 
   const colors = light
-    ? ["#b9b8ed", "#e5b9df", "#91c9e9", "#d6d5f5"]
-    : ["#101d50", "#51409b", "#193f78", "#11132e"];
+  ? ["#d9d5ff", "#ffcbe9", "#aee5f5", "#eee5ff"]
+  : ["#101d50", "#51409b", "#193f78", "#11132e"];
 
   const gradient = ctx.createLinearGradient(
     0, 0, 512, 256
@@ -307,7 +307,7 @@ const planetMaterial = new THREE.MeshStandardMaterial({
 });
 
 const planet = new THREE.Mesh(
-  new THREE.SphereGeometry(1.45, 64, 48),
+  new THREE.SphereGeometry(1.15, 64, 48),
   planetMaterial
 );
 
@@ -327,7 +327,7 @@ const atmosphereMaterial = new THREE.MeshBasicMaterial({
 });
 
 const atmosphere = new THREE.Mesh(
-  new THREE.SphereGeometry(1.59, 48, 48),
+  new THREE.SphereGeometry(1.28, 48, 48),
   atmosphereMaterial
 );
 
@@ -336,7 +336,7 @@ universe.add(atmosphere);
 // Outer atmosphere
 
 const outerGlow = new THREE.Mesh(
-  new THREE.SphereGeometry(1.72, 40, 40),
+  new THREE.SphereGeometry(1.40, 40, 40),
   new THREE.MeshBasicMaterial({
     color: 0x5b7dff,
     transparent: true,
