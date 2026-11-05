@@ -169,6 +169,9 @@ try {
 
 const scene = new THREE.Scene();
 
+// INITIAL BACKGROUND
+scene.background = new THREE.Color(0x040510);
+
 const camera = new THREE.PerspectiveCamera(
   48,
   innerWidth / innerHeight,
