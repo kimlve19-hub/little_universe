@@ -18,7 +18,7 @@ body {
   font-family: Arial, sans-serif;
   background: #040510;
   color: white;
-  transition: background 0.8s, color 0.8s;
+  transition: background 1s, color 1s;
 }
 
 #universe {
@@ -51,7 +51,7 @@ canvas {
   font-size: 10px;
   letter-spacing: 4px;
   color: #aaa9df;
-  transition: color 0.8s;
+  transition: color 1s;
 }
 
 .theme-toggle {
@@ -88,7 +88,7 @@ canvas {
   font-size: 10px;
   letter-spacing: 3px;
   color: #aaa9d9;
-  transition: color 0.8s;
+  transition: color 1s;
 }
 
 #status {
@@ -102,12 +102,9 @@ body.light {
   color: #41416e;
 }
 
-body.light .header p {
-  color: #7274a9;
-}
-
+body.light .header p,
 body.light .footer p {
-  color: #7476a4;
+  color: #7274a9;
 }
 
 body.light #status {
@@ -166,17 +163,20 @@ const toggle = document.querySelector("#themeToggle");
 
 try {
 
-// SCENE
+// ======================================
+// SCENE & CAMERA
+// ======================================
 
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(
-  50, innerWidth / innerHeight, 0.1, 100
+  48,
+  innerWidth / innerHeight,
+  0.1,
+  100
 );
 
-camera.position.z = 7.5;
-
-// RENDERER
+camera.position.set(0, 0, 7.5);
 
 const renderer = new THREE.WebGLRenderer({
   antialias: false,
@@ -189,125 +189,166 @@ renderer.setPixelRatio(
 
 renderer.setSize(innerWidth, innerHeight);
 
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
 container.appendChild(renderer.domElement);
 
-// BACKGROUND
-
-scene.background = new THREE.Color(0x040510);
-
-// UNIVERSE
+// ======================================
+// UNIVERSE GROUP
+// ======================================
 
 const universe = new THREE.Group();
 scene.add(universe);
 
+// ======================================
 // PLANET TEXTURE
+// ======================================
 
-const canvas = document.createElement("canvas");
+const planetCanvas = document.createElement("canvas");
 
-canvas.width = 512;
-canvas.height = 256;
+planetCanvas.width = 512;
+planetCanvas.height = 256;
 
-const ctx = canvas.getContext("2d");
+const ctx = planetCanvas.getContext("2d");
 
-const gradient = ctx.createLinearGradient(
-  0, 0, 512, 256
-);
+function drawPlanetTexture(light) {
 
-gradient.addColorStop(0, "#101d50");
-gradient.addColorStop(0.4, "#51409b");
-gradient.addColorStop(0.7, "#193f78");
-gradient.addColorStop(1, "#11132e");
+  const colors = light
+    ? ["#b9b8ed", "#e5b9df", "#91c9e9", "#d6d5f5"]
+    : ["#101d50", "#51409b", "#193f78", "#11132e"];
 
-ctx.fillStyle = gradient;
-ctx.fillRect(0, 0, 512, 256);
-
-for (let i = 0; i < 24; i++) {
-
-  const x = Math.random() * 512;
-  const y = Math.random() * 256;
-  const size = 12 + Math.random() * 35;
-
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-
-  ctx.bezierCurveTo(
-    x + size, y - size,
-    x + size * 1.8, y + size,
-    x + size * 0.8, y + size * 1.5
+  const gradient = ctx.createLinearGradient(
+    0, 0, 512, 256
   );
 
-  ctx.bezierCurveTo(
-    x - size * 0.5, y + size * 1.8,
-    x - size, y + size * 0.5,
-    x, y
-  );
+  gradient.addColorStop(0, colors[0]);
+  gradient.addColorStop(0.4, colors[1]);
+  gradient.addColorStop(0.7, colors[2]);
+  gradient.addColorStop(1, colors[3]);
 
-  ctx.fillStyle =
-    i % 2 === 0 ? "#8274c9" : "#326a9d";
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 512, 256);
 
-  ctx.globalAlpha = 0.65;
-  ctx.fill();
+  // Planet surface formations
+
+  for (let i = 0; i < 32; i++) {
+
+    const x = Math.random() * 512;
+    const y = Math.random() * 256;
+    const size = 12 + Math.random() * 35;
+
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+
+    ctx.bezierCurveTo(
+      x + size, y - size,
+      x + size * 1.8, y + size,
+      x + size * 0.8, y + size * 1.5
+    );
+
+    ctx.bezierCurveTo(
+      x - size * 0.5, y + size * 1.8,
+      x - size, y + size * 0.5,
+      x, y
+    );
+
+    ctx.fillStyle = light
+      ? (i % 2 === 0 ? "#f5d5ef" : "#a8d9ed")
+      : (i % 2 === 0 ? "#8274c9" : "#326a9d");
+
+    ctx.globalAlpha = light ? 0.48 : 0.65;
+    ctx.fill();
+  }
+
+  // Atmospheric surface lines
+
+  for (let i = 0; i < 35; i++) {
+
+    ctx.beginPath();
+
+    const y = Math.random() * 256;
+
+    ctx.moveTo(0, y);
+
+    ctx.bezierCurveTo(
+      140, y - 12,
+      320, y + 15,
+      512, y - 5
+    );
+
+    ctx.strokeStyle = light
+      ? "#ffffff"
+      : "#a9b7ff";
+
+    ctx.globalAlpha = light ? 0.2 : 0.12;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  ctx.globalAlpha = 1;
 }
 
-ctx.globalAlpha = 1;
+drawPlanetTexture(false);
 
-for (let i = 0; i < 30; i++) {
+const planetTexture = new THREE.CanvasTexture(planetCanvas);
+planetTexture.colorSpace = THREE.SRGBColorSpace;
 
-  ctx.beginPath();
-
-  const y = Math.random() * 256;
-
-  ctx.moveTo(0, y);
-
-  ctx.bezierCurveTo(
-    140, y - 12,
-    320, y + 15,
-    512, y - 5
-  );
-
-  ctx.strokeStyle = "#a9b7ff";
-  ctx.globalAlpha = 0.12;
-  ctx.lineWidth = 2;
-  ctx.stroke();
-}
-
-ctx.globalAlpha = 1;
-
-const texture = new THREE.CanvasTexture(canvas);
-
-texture.colorSpace = THREE.SRGBColorSpace;
-
+// ======================================
 // PLANET
+// ======================================
+
+const planetMaterial = new THREE.MeshStandardMaterial({
+  map: planetTexture,
+  roughness: 0.85,
+  metalness: 0.12
+});
 
 const planet = new THREE.Mesh(
   new THREE.SphereGeometry(1.45, 64, 48),
-
-  new THREE.MeshStandardMaterial({
-    map: texture,
-    roughness: 0.85,
-    metalness: 0.12
-  })
+  planetMaterial
 );
 
 universe.add(planet);
 
+// ======================================
 // ATMOSPHERE
+// ======================================
+
+const atmosphereMaterial = new THREE.MeshBasicMaterial({
+  color: 0x8176ff,
+  transparent: true,
+  opacity: 0.14,
+  side: THREE.BackSide,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false
+});
 
 const atmosphere = new THREE.Mesh(
-  new THREE.SphereGeometry(1.58, 48, 48),
-
-  new THREE.MeshBasicMaterial({
-    color: 0x8176ff,
-    transparent: true,
-    opacity: 0.14,
-    side: THREE.BackSide,
-    blending: THREE.AdditiveBlending
-  })
+  new THREE.SphereGeometry(1.59, 48, 48),
+  atmosphereMaterial
 );
 
 universe.add(atmosphere);
 
+// Outer atmosphere
+
+const outerGlow = new THREE.Mesh(
+  new THREE.SphereGeometry(1.72, 40, 40),
+  new THREE.MeshBasicMaterial({
+    color: 0x5b7dff,
+    transparent: true,
+    opacity: 0.045,
+    side: THREE.BackSide,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  })
+);
+
+universe.add(outerGlow);
+
+// ======================================
 // LIGHTS
+// ======================================
 
 const ambient = new THREE.AmbientLight(
   0x7777bb, 1.4
@@ -329,10 +370,148 @@ const blueLight = new THREE.PointLight(
 blueLight.position.set(4, -3, -3);
 scene.add(blueLight);
 
+// ======================================
+// 3D NEBULA
+// ======================================
+
+const nebulaGroup = new THREE.Group();
+scene.add(nebulaGroup);
+
+const nebulaParticles = [];
+
+function createNebulaCloud(
+  count,
+  center,
+  spread,
+  palette
+) {
+
+  const positions = [];
+  const colors = [];
+
+  for (let i = 0; i < count; i++) {
+
+    const x = center.x + (Math.random() - 0.5) * spread.x;
+    const y = center.y + (Math.random() - 0.5) * spread.y;
+    const z = center.z + (Math.random() - 0.5) * spread.z;
+
+    positions.push(x, y, z);
+
+    const chosen = palette[
+      Math.floor(Math.random() * palette.length)
+    ];
+
+    colors.push(chosen.r, chosen.g, chosen.b);
+  }
+
+  const geometry = new THREE.BufferGeometry();
+
+  geometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(positions, 3)
+  );
+
+  const colorAttribute = new THREE.Float32BufferAttribute(
+    colors, 3
+  );
+
+  geometry.setAttribute("color", colorAttribute);
+
+  const material = new THREE.PointsMaterial({
+    size: 0.16,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.25,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    sizeAttenuation: true
+  });
+
+  const cloud = new THREE.Points(geometry, material);
+
+  nebulaGroup.add(cloud);
+
+  nebulaParticles.push({
+    geometry,
+    material,
+    count,
+    palette
+  });
+
+}
+
+const darkNebula = [
+  new THREE.Color("#5140b9"),
+  new THREE.Color("#326cba"),
+  new THREE.Color("#a05bd1"),
+  new THREE.Color("#283e87")
+];
+
+const lightNebula = [
+  new THREE.Color("#c5b9f5"),
+  new THREE.Color("#f2bde1"),
+  new THREE.Color("#9ed8ed"),
+  new THREE.Color("#e8d7fa")
+];
+
+createNebulaCloud(
+  450,
+  new THREE.Vector3(-3, 1.5, -5),
+  new THREE.Vector3(7, 4, 2),
+  darkNebula
+);
+
+createNebulaCloud(
+  400,
+  new THREE.Vector3(3, -1.8, -7),
+  new THREE.Vector3(8, 4, 2),
+  darkNebula
+);
+
+createNebulaCloud(
+  300,
+  new THREE.Vector3(0, 3, -9),
+  new THREE.Vector3(10, 3, 2),
+  darkNebula
+);
+
+function updateNebula(light) {
+
+  const palette = light ? lightNebula : darkNebula;
+
+  nebulaParticles.forEach(cloud => {
+
+    const colors = [];
+
+    for (let i = 0; i < cloud.count; i++) {
+
+      const chosen = palette[
+        Math.floor(Math.random() * palette.length)
+      ];
+
+      colors.push(
+        chosen.r,
+        chosen.g,
+        chosen.b
+      );
+    }
+
+    cloud.geometry.setAttribute(
+      "color",
+      new THREE.Float32BufferAttribute(colors, 3)
+    );
+
+    cloud.material.opacity = light ? 0.19 : 0.25;
+
+  });
+
+}
+
+// ======================================
 // ORBIT RINGS
+// ======================================
 
 const ringGroup = new THREE.Group();
-
 universe.add(ringGroup);
 
 ringGroup.rotation.x = 1.05;
@@ -340,7 +519,6 @@ ringGroup.rotation.y = 0.2;
 
 const ringOne = new THREE.Mesh(
   new THREE.TorusGeometry(2.05, 0.014, 6, 160),
-
   new THREE.MeshBasicMaterial({
     color: 0x8c8bff,
     transparent: true,
@@ -352,7 +530,6 @@ ringGroup.add(ringOne);
 
 const ringTwo = new THREE.Mesh(
   new THREE.TorusGeometry(2.3, 0.007, 6, 160),
-
   new THREE.MeshBasicMaterial({
     color: 0x42caff,
     transparent: true,
@@ -362,17 +539,17 @@ const ringTwo = new THREE.Mesh(
 
 ringGroup.add(ringTwo);
 
-// PARTICLES
+// ======================================
+// ORBITING PARTICLES
+// ======================================
 
 const particleGroup = new THREE.Group();
-
 universe.add(particleGroup);
 
 for (let i = 0; i < 3; i++) {
 
   const particle = new THREE.Mesh(
     new THREE.SphereGeometry(0.045, 10, 10),
-
     new THREE.MeshBasicMaterial({
       color: i === 1 ? 0x65caff : 0xc6aaff
     })
@@ -383,7 +560,100 @@ for (let i = 0; i < 3; i++) {
   particle.userData.angle = i * Math.PI * 2 / 3;
 }
 
+// ======================================
+// SMALL 3D SPACESHIP
+// ======================================
+
+const ship = new THREE.Group();
+universe.add(ship);
+
+// Main body
+
+const shipBody = new THREE.Mesh(
+  new THREE.CylinderGeometry(
+    0.055, 0.095, 0.58, 8
+  ),
+  new THREE.MeshStandardMaterial({
+    color: 0xdce5ff,
+    metalness: 0.75,
+    roughness: 0.3
+  })
+);
+
+shipBody.rotation.z = -Math.PI / 2;
+ship.add(shipBody);
+
+// Nose
+
+const shipNose = new THREE.Mesh(
+  new THREE.ConeGeometry(0.075, 0.25, 8),
+  new THREE.MeshStandardMaterial({
+    color: 0x9dbdff,
+    metalness: 0.5,
+    roughness: 0.25
+  })
+);
+
+shipNose.rotation.z = -Math.PI / 2;
+shipNose.position.x = 0.39;
+ship.add(shipNose);
+
+// Wings
+
+function createWing(x, y, rotation) {
+
+  const wing = new THREE.Mesh(
+    new THREE.BoxGeometry(0.32, 0.035, 0.25),
+    new THREE.MeshStandardMaterial({
+      color: 0x929bd5,
+      metalness: 0.55,
+      roughness: 0.4
+    })
+  );
+
+  wing.position.set(x, y, 0);
+  wing.rotation.z = rotation;
+
+  ship.add(wing);
+}
+
+createWing(-0.05, 0.14, -0.3);
+createWing(-0.05, -0.14, 0.3);
+
+// Engine glow
+
+const engine = new THREE.Mesh(
+  new THREE.SphereGeometry(0.07, 12, 12),
+  new THREE.MeshBasicMaterial({
+    color: 0x58caff
+  })
+);
+
+engine.position.x = -0.31;
+ship.add(engine);
+
+const engineLight = new THREE.PointLight(
+  0x4bbcff, 2, 2
+);
+
+engineLight.position.x = -0.38;
+ship.add(engineLight);
+
+// Navigation lights
+
+const navLight = new THREE.Mesh(
+  new THREE.SphereGeometry(0.035, 8, 8),
+  new THREE.MeshBasicMaterial({
+    color: 0xffa9e8
+  })
+);
+
+navLight.position.set(0, 0.16, 0.08);
+ship.add(navLight);
+
+// ======================================
 // STARS
+// ======================================
 
 const starPositions = [];
 
@@ -412,12 +682,15 @@ const starMaterial = new THREE.PointsMaterial({
 });
 
 const stars = new THREE.Points(
-  starGeometry, starMaterial
+  starGeometry,
+  starMaterial
 );
 
 scene.add(stars);
 
+// ======================================
 // THEME SYSTEM
+// ======================================
 
 let isLight = false;
 
@@ -427,6 +700,7 @@ const darkSettings = {
   violet: 90,
   blue: 70,
   atmosphere: 0.14,
+  outerGlow: 0.045,
   ringOne: 0x8c8bff,
   ringTwo: 0x42caff,
   star: 0xc7caff,
@@ -438,9 +712,10 @@ const lightSettings = {
   ambient: 2.0,
   violet: 55,
   blue: 45,
-  atmosphere: 0.32,
-  ringOne: 0x7774ca,
-  ringTwo: 0x43a9d9,
+  atmosphere: 0.27,
+  outerGlow: 0.075,
+  ringOne: 0xb2a0e8,
+  ringTwo: 0x79c6e5,
   star: 0x7378ae,
   starOpacity: 0.48
 };
@@ -458,13 +733,42 @@ function applyTheme(light) {
   violetLight.intensity = settings.violet;
   blueLight.intensity = settings.blue;
 
+  atmosphere.material.color.setHex(
+    light ? 0xd9caff : 0x8176ff
+  );
+
   atmosphere.material.opacity = settings.atmosphere;
+
+  outerGlow.material.color.setHex(
+    light ? 0xe5c9f5 : 0x5b7dff
+  );
+
+  outerGlow.material.opacity = settings.outerGlow;
 
   ringOne.material.color.setHex(settings.ringOne);
   ringTwo.material.color.setHex(settings.ringTwo);
 
   starMaterial.color.setHex(settings.star);
   starMaterial.opacity = settings.starOpacity;
+
+  // Change the planet's actual surface colors
+
+  drawPlanetTexture(light);
+  planetTexture.needsUpdate = true;
+
+  // Change nebula colors
+
+  updateNebula(light);
+
+  // Change spaceship appearance
+
+  shipBody.material.color.setHex(
+    light ? 0xf5eaff : 0xdce5ff
+  );
+
+  shipNose.material.color.setHex(
+    light ? 0xd7bdf4 : 0x9dbdff
+  );
 
   document.body.classList.toggle("light", light);
 
@@ -483,6 +787,8 @@ function applyTheme(light) {
   } catch (e) {}
 
 }
+
+// Load saved theme
 
 let savedTheme = "dark";
 
@@ -503,9 +809,12 @@ toggle.addEventListener("click", () => {
 
 });
 
-// DRAG
+// ======================================
+// DRAG INTERACTION
+// ======================================
 
 let dragging = false;
+
 let previousX = 0;
 let previousY = 0;
 
@@ -550,7 +859,9 @@ surface.addEventListener("pointercancel", () => {
   dragging = false;
 });
 
-// ANIMATION
+// ======================================
+// CINEMATIC ANIMATION
+// ======================================
 
 const clock = new THREE.Clock();
 
@@ -559,6 +870,8 @@ function animate() {
   requestAnimationFrame(animate);
 
   const time = clock.getElapsedTime();
+
+  // Slow automatic planet movement
 
   if (!dragging) {
     targetY += 0.0015;
@@ -570,8 +883,12 @@ function animate() {
   universe.rotation.x +=
     (targetX - universe.rotation.x) * 0.06;
 
+  // Ring movement
+
   ringGroup.rotation.z =
     Math.sin(time * 0.2) * 0.08;
+
+  // Orbiting particles
 
   particleGroup.children.forEach(p => {
 
@@ -585,7 +902,49 @@ function animate() {
 
   });
 
+  // Spaceship orbit
+
+  const shipAngle = time * 0.34;
+
+  ship.position.set(
+    Math.cos(shipAngle) * 2.75,
+    Math.sin(shipAngle * 1.2) * 0.75,
+    Math.sin(shipAngle) * 2.25
+  );
+
+  ship.rotation.y = -shipAngle;
+  ship.rotation.z = Math.sin(shipAngle) * 0.12;
+
+  // Engine glow pulse
+
+  engine.scale.setScalar(
+    0.85 + Math.sin(time * 8) * 0.15
+  );
+
+  // Nebula slow movement
+
+  nebulaGroup.rotation.z = Math.sin(time * 0.06) * 0.025;
+  nebulaGroup.rotation.y = Math.sin(time * 0.04) * 0.025;
+
+  // Star movement
+
   stars.rotation.y += 0.0001;
+
+  // Cinematic camera drift
+
+  camera.position.x = Math.sin(time * 0.16) * 0.12;
+  camera.position.y = Math.cos(time * 0.13) * 0.09;
+
+  camera.position.z =
+    7.5 + Math.sin(time * 0.2) * 0.12;
+
+  camera.lookAt(0, 0, 0);
+
+  // Planet floating motion
+
+  planet.position.y = Math.sin(time * 0.45) * 0.025;
+  atmosphere.position.y = planet.position.y;
+  outerGlow.position.y = planet.position.y;
 
   renderer.render(scene, camera);
 
@@ -595,7 +954,9 @@ animate();
 
 status.textContent = "UNIVERSE ONLINE ✦";
 
+// ======================================
 // RESIZE
+// ======================================
 
 window.addEventListener("resize", () => {
 
@@ -619,4 +980,3 @@ window.addEventListener("resize", () => {
 
 </body>
   </html>
-  
