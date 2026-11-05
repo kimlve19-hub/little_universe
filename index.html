@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Little Universe</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  overflow: hidden;
+  background: #050511;
+  font-family: Arial, sans-serif;
+  color: white;
+}
+
+#universe {
+  position: fixed;
+  inset: 0;
+}
+
+canvas {
+  display: block;
+  touch-action: none;
+}
+
+.info {
+  position: fixed;
+  top: 35px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.info h1 {
+  font-size: 27px;
+  letter-spacing: 5px;
+  font-weight: 300;
+}
+
+.info p {
+  margin-top: 12px;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: #aaa9d9;
+}
+
+.hint {
+  position: fixed;
+  bottom: 35px;
+  width: 100%;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #aaa9d9;
+  pointer-events: none;
+}
+
+#status {
+  position: fixed;
+  bottom: 12px;
+  width: 100%;
+  text-align: center;
+  color: #8c88c8;
+  font-size: 10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="universe"></div>
+
+<div class="info">
+  <h1>LITTLE UNIVERSE</h1>
+  <p>EXPLORE YOUR OWN WORLD</p>
+</div>
+
+<div class="hint">
+  DRAG TO ROTATE THE PLANET
+</div>
+
+<div id="status">INITIALIZING UNIVERSE...</div>
+
+<script type="module">
+import * as THREE from
+"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+
+const container = document.querySelector("#universe");
+const status = document.querySelector("#status");
+
+try {
+
+const scene = new THREE.Scene();
+
+scene.background = new THREE.Color(0x050511);
+
+scene.fog = new THREE.FogExp2(0x050511, 0.025);
+
+const camera = new THREE.PerspectiveCamera(
+  55,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  100
+);
+
+camera.position.z = 7;
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: false,
+  alpha: false
+});
+
+renderer.setPixelRatio(
+  Math.min(window.devicePixelRatio, 1.5)
+);
+
+renderer.setSize(
+  window.innerWidth,
+  window.innerHeight
+);
+
+container.appendChild(renderer.domElement);
+
+// PLANET
+
+const planetGeometry = new THREE.SphereGeometry(
+  1.7, 48, 48
+);
+
+const planetMaterial = new THREE.MeshStandardMaterial({
+  color: 0x7774c9,
+  roughness: 0.75,
+  metalness: 0.15
+});
+
+const planet = new THREE.Mesh(
+  planetGeometry,
+  planetMaterial
+);
+
+scene.add(planet);
+
+// LIGHTING
+
+const ambient = new THREE.AmbientLight(
+  0x7777bb, 1.5
+);
+
+scene.add(ambient);
+
+const mainLight = new THREE.PointLight(
+  0xb7a4ff, 100, 30
+);
+
+mainLight.position.set(-4, 3, 5);
+scene.add(mainLight);
+
+const blueLight = new THREE.PointLight(
+  0x477dff, 65, 25
+);
+
+blueLight.position.set(4, -2, -3);
+scene.add(blueLight);
+
+// PLANET GLOW
+
+const glowGeometry = new THREE.SphereGeometry(
+  1.85, 32, 32
+);
+
+const glowMaterial = new THREE.MeshBasicMaterial({
+  color: 0x7777ff,
+  transparent: true,
+  opacity: 0.08,
+  side: THREE.BackSide
+});
+
+const glow = new THREE.Mesh(
+  glowGeometry,
+  glowMaterial
+);
+
+planet.add(glow);
+
+// STARS
+
+const starGeometry = new THREE.BufferGeometry();
+
+const starCount = 900;
+const positions = [];
+
+for (let i = 0; i < starCount; i++) {
+  positions.push(
+    (Math.random() - 0.5) * 60,
+    (Math.random() - 0.5) * 60,
+    (Math.random() - 0.5) * 60
+  );
+}
+
+starGeometry.setAttribute(
+  "position",
+  new THREE.Float32BufferAttribute(positions, 3)
+);
+
+const starMaterial = new THREE.PointsMaterial({
+  color: 0xffffff,
+  size: 0.045,
+  transparent: true,
+  opacity: 0.8
+});
+
+const stars = new THREE.Points(
+  starGeometry,
+  starMaterial
+);
+
+scene.add(stars);
+
+// DRAG INTERACTION
+
+let dragging = false;
+let previousX = 0;
+let previousY = 0;
+
+let targetX = 0;
+let targetY = 0;
+
+renderer.domElement.addEventListener(
+  "pointerdown", (event) => {
+    dragging = true;
+    previousX = event.clientX;
+    previousY = event.clientY;
+  }
+);
+
+window.addEventListener("pointerup", () => {
+  dragging = false;
+});
+
+window.addEventListener("pointermove", (event) => {
+
+  if (!dragging) return;
+
+  const dx = event.clientX - previousX;
+  const dy = event.clientY - previousY;
+
+  targetY += dx * 0.008;
+  targetX += dy * 0.008;
+
+  previousX = event.clientX;
+  previousY = event.clientY;
+
+});
+
+// ANIMATION
+
+let clock = new THREE.Clock();
+
+function animate() {
+
+  requestAnimationFrame(animate);
+
+  const time = clock.getElapsedTime();
+
+  if (!dragging) {
+    targetY += 0.0015;
+  }
+
+  planet.rotation.y +=
+    (targetY - planet.rotation.y) * 0.08;
+
+  planet.rotation.x +=
+    (targetX - planet.rotation.x) * 0.08;
+
+  planet.position.y = Math.sin(time * 0.7) * 0.12;
+
+  stars.rotation.y += 0.00015;
+
+  renderer.render(scene, camera);
+}
+
+animate();
+
+status.textContent = "UNIVERSE ONLINE ✦";
+
+window.addEventListener("resize", () => {
+
+  camera.aspect =
+    window.innerWidth / window.innerHeight;
+
+  camera.updateProjectionMatrix();
+
+  renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+  );
+
+});
+
+} catch (error) {
+
+  console.error(error);
+
+  status.textContent =
+    "UNIVERSE ERROR — CHECK BROWSER CONSOLE";
+
+}
+
+</script>
+</body>
+</html>
