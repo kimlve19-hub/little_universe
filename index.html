@@ -169,7 +169,6 @@ try {
 
 const scene = new THREE.Scene();
 
-// INITIAL BACKGROUND
 scene.background = new THREE.Color(0x040510);
 
 const camera = new THREE.PerspectiveCamera(
@@ -191,7 +190,6 @@ renderer.setPixelRatio(
 );
 
 renderer.setSize(innerWidth, innerHeight);
-
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 container.appendChild(renderer.domElement);
@@ -217,8 +215,8 @@ const ctx = planetCanvas.getContext("2d");
 function drawPlanetTexture(light) {
 
   const colors = light
-  ? ["#d9d5ff", "#ffcbe9", "#aee5f5", "#eee5ff"]
-  : ["#101d50", "#51409b", "#193f78", "#11132e"];
+    ? ["#d9d5ff", "#ffcbe9", "#aee5f5", "#eee5ff"]
+    : ["#101d50", "#51409b", "#193f78", "#11132e"];
 
   const gradient = ctx.createLinearGradient(
     0, 0, 512, 256
@@ -302,12 +300,20 @@ planetTexture.colorSpace = THREE.SRGBColorSpace;
 
 const planetMaterial = new THREE.MeshStandardMaterial({
   map: planetTexture,
+
+  // Use the texture as the planet's light source
+  // in Light Mode to preserve its pastel colors.
+
+  emissive: 0xffffff,
+  emissiveMap: planetTexture,
+  emissiveIntensity: 0,
+
   roughness: 0.85,
   metalness: 0.12
 });
 
 const planet = new THREE.Mesh(
-  new THREE.SphereGeometry(1.15, 64, 48),
+  new THREE.SphereGeometry(1.05, 64, 48),
   planetMaterial
 );
 
@@ -327,7 +333,7 @@ const atmosphereMaterial = new THREE.MeshBasicMaterial({
 });
 
 const atmosphere = new THREE.Mesh(
-  new THREE.SphereGeometry(1.28, 48, 48),
+  new THREE.SphereGeometry(1.18, 48, 48),
   atmosphereMaterial
 );
 
@@ -336,7 +342,7 @@ universe.add(atmosphere);
 // Outer atmosphere
 
 const outerGlow = new THREE.Mesh(
-  new THREE.SphereGeometry(1.40, 40, 40),
+  new THREE.SphereGeometry(1.30, 40, 40),
   new THREE.MeshBasicMaterial({
     color: 0x5b7dff,
     transparent: true,
@@ -414,11 +420,10 @@ function createNebulaCloud(
     new THREE.Float32BufferAttribute(positions, 3)
   );
 
-  const colorAttribute = new THREE.Float32BufferAttribute(
-    colors, 3
+  geometry.setAttribute(
+    "color",
+    new THREE.Float32BufferAttribute(colors, 3)
   );
-
-  geometry.setAttribute("color", colorAttribute);
 
   const material = new THREE.PointsMaterial({
     size: 0.16,
@@ -437,8 +442,7 @@ function createNebulaCloud(
   nebulaParticles.push({
     geometry,
     material,
-    count,
-    palette
+    count
   });
 
 }
@@ -759,6 +763,11 @@ function applyTheme(light) {
   drawPlanetTexture(light);
   planetTexture.needsUpdate = true;
 
+  // Brighten the pastel texture in Light Mode.
+  // Turn off the extra emission in Dark Mode.
+
+  planetMaterial.emissiveIntensity = light ? 0.75 : 0;
+
   // Change nebula colors
 
   updateNebula(light);
@@ -982,4 +991,4 @@ window.addEventListener("resize", () => {
 </script>
 
 </body>
-  </html>
+</html>
