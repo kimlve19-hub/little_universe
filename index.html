@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Little Universe</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Little Universe | V2</title>
 
 <style>
 * {
@@ -14,9 +14,9 @@
 
 body {
   overflow: hidden;
-  background: #050511;
-  font-family: Arial, sans-serif;
+  background: #040510;
   color: white;
+  font-family: Arial, sans-serif;
 }
 
 #universe {
@@ -29,47 +29,47 @@ canvas {
   touch-action: none;
 }
 
-.info {
+.header {
   position: fixed;
-  top: 35px;
-  left: 0;
+  z-index: 5;
+  top: 38px;
   width: 100%;
   text-align: center;
   pointer-events: none;
-  z-index: 2;
 }
 
-.info h1 {
-  font-size: 27px;
-  letter-spacing: 5px;
+.header h1 {
+  font-size: 23px;
   font-weight: 300;
+  letter-spacing: 6px;
 }
 
-.info p {
+.header p {
   margin-top: 12px;
-  font-size: 11px;
-  letter-spacing: 3px;
-  color: #aaa9d9;
+  color: #a6a4e8;
+  font-size: 10px;
+  letter-spacing: 4px;
 }
 
-.hint {
+.footer {
   position: fixed;
   bottom: 35px;
   width: 100%;
   text-align: center;
-  font-size: 11px;
-  letter-spacing: 2px;
-  color: #aaa9d9;
+  z-index: 5;
   pointer-events: none;
 }
 
-#status {
-  position: fixed;
-  bottom: 12px;
-  width: 100%;
-  text-align: center;
-  color: #8c88c8;
+.footer p {
   font-size: 10px;
+  letter-spacing: 3px;
+  color: #aaa9d9;
+}
+
+#status {
+  margin-top: 10px;
+  font-size: 9px;
+  color: #7778b8;
 }
 
 </style>
@@ -79,18 +79,18 @@ canvas {
 
 <div id="universe"></div>
 
-<div class="info">
+<div class="header">
   <h1>LITTLE UNIVERSE</h1>
-  <p>EXPLORE YOUR OWN WORLD</p>
+  <p>BEYOND THE ORDINARY</p>
 </div>
 
-<div class="hint">
-  DRAG TO ROTATE THE PLANET
+<div class="footer">
+  <p>TOUCH & DRAG TO EXPLORE</p>
+  <div id="status">BUILDING YOUR UNIVERSE...</div>
 </div>
-
-<div id="status">INITIALIZING UNIVERSE...</div>
 
 <script type="module">
+
 import * as THREE from
 "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 
@@ -99,20 +99,22 @@ const status = document.querySelector("#status");
 
 try {
 
+// SCENE
+
 const scene = new THREE.Scene();
 
-scene.background = new THREE.Color(0x050511);
-
-scene.fog = new THREE.FogExp2(0x050511, 0.025);
+scene.background = new THREE.Color(0x040510);
 
 const camera = new THREE.PerspectiveCamera(
-  55,
-  window.innerWidth / window.innerHeight,
+  50,
+  innerWidth / innerHeight,
   0.1,
   100
 );
 
-camera.position.z = 7;
+camera.position.z = 7.5;
+
+// RENDERER
 
 const renderer = new THREE.WebGLRenderer({
   antialias: false,
@@ -120,150 +122,298 @@ const renderer = new THREE.WebGLRenderer({
 });
 
 renderer.setPixelRatio(
-  Math.min(window.devicePixelRatio, 1.5)
+  Math.min(devicePixelRatio, 1.25)
 );
 
-renderer.setSize(
-  window.innerWidth,
-  window.innerHeight
-);
+renderer.setSize(innerWidth, innerHeight);
 
 container.appendChild(renderer.domElement);
 
+// PLANET GROUP
+
+const universe = new THREE.Group();
+
+scene.add(universe);
+
+// PROCEDURAL PLANET TEXTURE
+
+const canvas = document.createElement("canvas");
+
+canvas.width = 512;
+canvas.height = 256;
+
+const ctx = canvas.getContext("2d");
+
+const gradient = ctx.createLinearGradient(
+  0, 0, 512, 256
+);
+
+gradient.addColorStop(0, "#101d50");
+gradient.addColorStop(0.4, "#51409b");
+gradient.addColorStop(0.7, "#193f78");
+gradient.addColorStop(1, "#11132e");
+
+ctx.fillStyle = gradient;
+ctx.fillRect(0, 0, 512, 256);
+
+// Alien continents
+
+for (let i = 0; i < 24; i++) {
+
+  const x = Math.random() * 512;
+  const y = Math.random() * 256;
+
+  const size = 12 + Math.random() * 35;
+
+  ctx.beginPath();
+
+  ctx.moveTo(x, y);
+
+  ctx.bezierCurveTo(
+    x + size, y - size,
+    x + size * 1.8, y + size,
+    x + size * 0.8, y + size * 1.5
+  );
+
+  ctx.bezierCurveTo(
+    x - size * 0.5, y + size * 1.8,
+    x - size, y + size * 0.5,
+    x, y
+  );
+
+  ctx.fillStyle =
+    i % 2 === 0 ? "#8274c9" : "#326a9d";
+
+  ctx.globalAlpha = 0.65;
+  ctx.fill();
+}
+
+ctx.globalAlpha = 1;
+
+// Surface lines
+
+for (let i = 0; i < 30; i++) {
+
+  ctx.beginPath();
+
+  const y = Math.random() * 256;
+
+  ctx.moveTo(0, y);
+
+  ctx.bezierCurveTo(
+    140, y - 12,
+    320, y + 15,
+    512, y - 5
+  );
+
+  ctx.strokeStyle = "#a9b7ff";
+  ctx.globalAlpha = 0.12;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+ctx.globalAlpha = 1;
+
+const texture = new THREE.CanvasTexture(canvas);
+
+texture.colorSpace = THREE.SRGBColorSpace;
+
 // PLANET
 
-const planetGeometry = new THREE.SphereGeometry(
-  1.7, 48, 48
-);
-
-const planetMaterial = new THREE.MeshStandardMaterial({
-  color: 0x7774c9,
-  roughness: 0.75,
-  metalness: 0.15
-});
-
 const planet = new THREE.Mesh(
-  planetGeometry,
-  planetMaterial
+  new THREE.SphereGeometry(1.45, 64, 48),
+
+  new THREE.MeshStandardMaterial({
+    map: texture,
+    roughness: 0.85,
+    metalness: 0.12
+  })
 );
 
-scene.add(planet);
+universe.add(planet);
+
+// ATMOSPHERE
+
+const atmosphere = new THREE.Mesh(
+  new THREE.SphereGeometry(1.58, 48, 48),
+
+  new THREE.MeshBasicMaterial({
+    color: 0x8176ff,
+    transparent: true,
+    opacity: 0.14,
+    side: THREE.BackSide,
+    blending: THREE.AdditiveBlending
+  })
+);
+
+universe.add(atmosphere);
 
 // LIGHTING
 
-const ambient = new THREE.AmbientLight(
-  0x7777bb, 1.5
+scene.add(
+  new THREE.AmbientLight(0x7777bb, 1.4)
 );
 
-scene.add(ambient);
-
-const mainLight = new THREE.PointLight(
-  0xb7a4ff, 100, 30
+const violetLight = new THREE.PointLight(
+  0xa58aff, 90, 30
 );
 
-mainLight.position.set(-4, 3, 5);
-scene.add(mainLight);
+violetLight.position.set(-4, 3, 5);
+
+scene.add(violetLight);
 
 const blueLight = new THREE.PointLight(
-  0x477dff, 65, 25
+  0x368bff, 70, 25
 );
 
-blueLight.position.set(4, -2, -3);
+blueLight.position.set(4, -3, -3);
+
 scene.add(blueLight);
 
-// PLANET GLOW
+// HOLOGRAPHIC ORBIT
 
-const glowGeometry = new THREE.SphereGeometry(
-  1.85, 32, 32
+const ringGroup = new THREE.Group();
+
+universe.add(ringGroup);
+
+ringGroup.rotation.x = 1.05;
+ringGroup.rotation.y = 0.2;
+
+const ringOne = new THREE.Mesh(
+  new THREE.TorusGeometry(2.05, 0.014, 6, 160),
+
+  new THREE.MeshBasicMaterial({
+    color: 0x8c8bff,
+    transparent: true,
+    opacity: 0.85
+  })
 );
 
-const glowMaterial = new THREE.MeshBasicMaterial({
-  color: 0x7777ff,
-  transparent: true,
-  opacity: 0.08,
-  side: THREE.BackSide
-});
+ringGroup.add(ringOne);
 
-const glow = new THREE.Mesh(
-  glowGeometry,
-  glowMaterial
+const ringTwo = new THREE.Mesh(
+  new THREE.TorusGeometry(2.3, 0.007, 6, 160),
+
+  new THREE.MeshBasicMaterial({
+    color: 0x42caff,
+    transparent: true,
+    opacity: 0.55
+  })
 );
 
-planet.add(glow);
+ringGroup.add(ringTwo);
+
+// ORBIT PARTICLES
+
+const particleGroup = new THREE.Group();
+
+universe.add(particleGroup);
+
+for (let i = 0; i < 3; i++) {
+
+  const particle = new THREE.Mesh(
+    new THREE.SphereGeometry(0.045, 10, 10),
+
+    new THREE.MeshBasicMaterial({
+      color: i === 1 ? 0x65caff : 0xc6aaff
+    })
+  );
+
+  particleGroup.add(particle);
+
+  particle.userData.angle =
+    i * Math.PI * 2 / 3;
+
+}
 
 // STARS
 
-const starGeometry = new THREE.BufferGeometry();
+const starPositions = [];
 
-const starCount = 900;
-const positions = [];
+for (let i = 0; i < 550; i++) {
 
-for (let i = 0; i < starCount; i++) {
-  positions.push(
-    (Math.random() - 0.5) * 60,
-    (Math.random() - 0.5) * 60,
-    (Math.random() - 0.5) * 60
+  starPositions.push(
+    (Math.random() - 0.5) * 50,
+    (Math.random() - 0.5) * 50,
+    (Math.random() - 0.5) * 40
   );
+
 }
+
+const starGeometry = new THREE.BufferGeometry();
 
 starGeometry.setAttribute(
   "position",
-  new THREE.Float32BufferAttribute(positions, 3)
+  new THREE.Float32BufferAttribute(starPositions, 3)
 );
-
-const starMaterial = new THREE.PointsMaterial({
-  color: 0xffffff,
-  size: 0.045,
-  transparent: true,
-  opacity: 0.8
-});
 
 const stars = new THREE.Points(
   starGeometry,
-  starMaterial
+
+  new THREE.PointsMaterial({
+    color: 0xc7caff,
+    size: 0.035,
+    transparent: true,
+    opacity: 0.8
+  })
 );
 
 scene.add(stars);
 
-// DRAG INTERACTION
+// DRAG CONTROL
 
 let dragging = false;
+
 let previousX = 0;
 let previousY = 0;
 
 let targetX = 0;
 let targetY = 0;
 
-renderer.domElement.addEventListener(
-  "pointerdown", (event) => {
-    dragging = true;
-    previousX = event.clientX;
-    previousY = event.clientY;
-  }
-);
+const surface = renderer.domElement;
 
-window.addEventListener("pointerup", () => {
-  dragging = false;
+surface.addEventListener("pointerdown", e => {
+
+  dragging = true;
+
+  previousX = e.clientX;
+  previousY = e.clientY;
+
+  surface.setPointerCapture(e.pointerId);
+
 });
 
-window.addEventListener("pointermove", (event) => {
+surface.addEventListener("pointermove", e => {
 
   if (!dragging) return;
 
-  const dx = event.clientX - previousX;
-  const dy = event.clientY - previousY;
+  const dx = e.clientX - previousX;
+  const dy = e.clientY - previousY;
 
-  targetY += dx * 0.008;
-  targetX += dy * 0.008;
+  targetY += dx * 0.009;
+  targetX += dy * 0.009;
 
-  previousX = event.clientX;
-  previousY = event.clientY;
+  targetX = Math.max(
+    -1.2,
+    Math.min(1.2, targetX)
+  );
 
+  previousX = e.clientX;
+  previousY = e.clientY;
+
+});
+
+surface.addEventListener("pointerup", () => {
+  dragging = false;
+});
+
+surface.addEventListener("pointercancel", () => {
+  dragging = false;
 });
 
 // ANIMATION
 
-let clock = new THREE.Clock();
+const clock = new THREE.Clock();
 
 function animate() {
 
@@ -275,34 +425,45 @@ function animate() {
     targetY += 0.0015;
   }
 
-  planet.rotation.y +=
-    (targetY - planet.rotation.y) * 0.08;
+  universe.rotation.y +=
+    (targetY - universe.rotation.y) * 0.06;
 
-  planet.rotation.x +=
-    (targetX - planet.rotation.x) * 0.08;
+  universe.rotation.x +=
+    (targetX - universe.rotation.x) * 0.06;
 
-  planet.position.y = Math.sin(time * 0.7) * 0.12;
+  ringGroup.rotation.z = Math.sin(time * 0.2) * 0.08;
 
-  stars.rotation.y += 0.00015;
+  particleGroup.children.forEach(p => {
+
+    const a = time * 0.55 + p.userData.angle;
+
+    p.position.set(
+      Math.cos(a) * 2.05,
+      Math.sin(a) * 0.35,
+      Math.sin(a) * 1.8
+    );
+
+  });
+
+  stars.rotation.y += 0.0001;
 
   renderer.render(scene, camera);
+
 }
 
 animate();
 
 status.textContent = "UNIVERSE ONLINE ✦";
 
+// RESIZE
+
 window.addEventListener("resize", () => {
 
-  camera.aspect =
-    window.innerWidth / window.innerHeight;
+  camera.aspect = innerWidth / innerHeight;
 
   camera.updateProjectionMatrix();
 
-  renderer.setSize(
-    window.innerWidth,
-    window.innerHeight
-  );
+  renderer.setSize(innerWidth, innerHeight);
 
 });
 
@@ -310,11 +471,12 @@ window.addEventListener("resize", () => {
 
   console.error(error);
 
-  status.textContent =
-    "UNIVERSE ERROR — CHECK BROWSER CONSOLE";
+  status.textContent = "UNIVERSE ERROR";
 
 }
 
 </script>
+
 </body>
-</html>
+  </html>
+  
