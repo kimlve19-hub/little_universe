@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Little Universe | V2</title>
+<meta name="theme-color" content="#040510">
+<title>Little Universe | V3</title>
 
 <style>
 * {
@@ -14,9 +15,10 @@
 
 body {
   overflow: hidden;
+  font-family: Arial, sans-serif;
   background: #040510;
   color: white;
-  font-family: Arial, sans-serif;
+  transition: background 0.8s, color 0.8s;
 }
 
 #universe {
@@ -31,10 +33,10 @@ canvas {
 
 .header {
   position: fixed;
-  z-index: 5;
   top: 38px;
   width: 100%;
   text-align: center;
+  z-index: 5;
   pointer-events: none;
 }
 
@@ -46,9 +48,31 @@ canvas {
 
 .header p {
   margin-top: 12px;
-  color: #a6a4e8;
   font-size: 10px;
   letter-spacing: 4px;
+  color: #aaa9df;
+  transition: color 0.8s;
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 22px;
+  right: 20px;
+  z-index: 10;
+  width: 43px;
+  height: 43px;
+  border: 1px solid rgba(180,170,255,0.4);
+  border-radius: 50%;
+  background: rgba(60,50,110,0.35);
+  color: white;
+  font-size: 19px;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  transition: 0.4s;
+}
+
+.theme-toggle:active {
+  transform: scale(0.88);
 }
 
 .footer {
@@ -64,6 +88,7 @@ canvas {
   font-size: 10px;
   letter-spacing: 3px;
   color: #aaa9d9;
+  transition: color 0.8s;
 }
 
 #status {
@@ -72,12 +97,53 @@ canvas {
   color: #7778b8;
 }
 
+body.light {
+  background: #eaf0ff;
+  color: #41416e;
+}
+
+body.light .header p {
+  color: #7274a9;
+}
+
+body.light .footer p {
+  color: #7476a4;
+}
+
+body.light #status {
+  color: #8586b9;
+}
+
+body.light .theme-toggle {
+  background: rgba(255,255,255,0.75);
+  color: #5c579b;
+  border-color: rgba(130,120,190,0.4);
+  box-shadow: 0 4px 20px rgba(100,100,180,0.15);
+}
+
+@media (max-width: 480px) {
+  .header {
+    top: 75px;
+  }
+
+  .header h1 {
+    font-size: 19px;
+  }
+
+  .theme-toggle {
+    top: 18px;
+    right: 18px;
+  }
+}
 </style>
 </head>
 
 <body>
 
 <div id="universe"></div>
+
+<button class="theme-toggle" id="themeToggle"
+aria-label="Switch theme">☀️</button>
 
 <div class="header">
   <h1>LITTLE UNIVERSE</h1>
@@ -96,6 +162,7 @@ import * as THREE from
 
 const container = document.querySelector("#universe");
 const status = document.querySelector("#status");
+const toggle = document.querySelector("#themeToggle");
 
 try {
 
@@ -103,13 +170,8 @@ try {
 
 const scene = new THREE.Scene();
 
-scene.background = new THREE.Color(0x040510);
-
 const camera = new THREE.PerspectiveCamera(
-  50,
-  innerWidth / innerHeight,
-  0.1,
-  100
+  50, innerWidth / innerHeight, 0.1, 100
 );
 
 camera.position.z = 7.5;
@@ -129,13 +191,16 @@ renderer.setSize(innerWidth, innerHeight);
 
 container.appendChild(renderer.domElement);
 
-// PLANET GROUP
+// BACKGROUND
+
+scene.background = new THREE.Color(0x040510);
+
+// UNIVERSE
 
 const universe = new THREE.Group();
-
 scene.add(universe);
 
-// PROCEDURAL PLANET TEXTURE
+// PLANET TEXTURE
 
 const canvas = document.createElement("canvas");
 
@@ -156,17 +221,13 @@ gradient.addColorStop(1, "#11132e");
 ctx.fillStyle = gradient;
 ctx.fillRect(0, 0, 512, 256);
 
-// Alien continents
-
 for (let i = 0; i < 24; i++) {
 
   const x = Math.random() * 512;
   const y = Math.random() * 256;
-
   const size = 12 + Math.random() * 35;
 
   ctx.beginPath();
-
   ctx.moveTo(x, y);
 
   ctx.bezierCurveTo(
@@ -189,8 +250,6 @@ for (let i = 0; i < 24; i++) {
 }
 
 ctx.globalAlpha = 1;
-
-// Surface lines
 
 for (let i = 0; i < 30; i++) {
 
@@ -248,18 +307,19 @@ const atmosphere = new THREE.Mesh(
 
 universe.add(atmosphere);
 
-// LIGHTING
+// LIGHTS
 
-scene.add(
-  new THREE.AmbientLight(0x7777bb, 1.4)
+const ambient = new THREE.AmbientLight(
+  0x7777bb, 1.4
 );
+
+scene.add(ambient);
 
 const violetLight = new THREE.PointLight(
   0xa58aff, 90, 30
 );
 
 violetLight.position.set(-4, 3, 5);
-
 scene.add(violetLight);
 
 const blueLight = new THREE.PointLight(
@@ -267,10 +327,9 @@ const blueLight = new THREE.PointLight(
 );
 
 blueLight.position.set(4, -3, -3);
-
 scene.add(blueLight);
 
-// HOLOGRAPHIC ORBIT
+// ORBIT RINGS
 
 const ringGroup = new THREE.Group();
 
@@ -303,7 +362,7 @@ const ringTwo = new THREE.Mesh(
 
 ringGroup.add(ringTwo);
 
-// ORBIT PARTICLES
+// PARTICLES
 
 const particleGroup = new THREE.Group();
 
@@ -321,9 +380,7 @@ for (let i = 0; i < 3; i++) {
 
   particleGroup.add(particle);
 
-  particle.userData.angle =
-    i * Math.PI * 2 / 3;
-
+  particle.userData.angle = i * Math.PI * 2 / 3;
 }
 
 // STARS
@@ -347,23 +404,108 @@ starGeometry.setAttribute(
   new THREE.Float32BufferAttribute(starPositions, 3)
 );
 
-const stars = new THREE.Points(
-  starGeometry,
+const starMaterial = new THREE.PointsMaterial({
+  color: 0xc7caff,
+  size: 0.035,
+  transparent: true,
+  opacity: 0.8
+});
 
-  new THREE.PointsMaterial({
-    color: 0xc7caff,
-    size: 0.035,
-    transparent: true,
-    opacity: 0.8
-  })
+const stars = new THREE.Points(
+  starGeometry, starMaterial
 );
 
 scene.add(stars);
 
-// DRAG CONTROL
+// THEME SYSTEM
+
+let isLight = false;
+
+const darkSettings = {
+  background: 0x040510,
+  ambient: 1.4,
+  violet: 90,
+  blue: 70,
+  atmosphere: 0.14,
+  ringOne: 0x8c8bff,
+  ringTwo: 0x42caff,
+  star: 0xc7caff,
+  starOpacity: 0.8
+};
+
+const lightSettings = {
+  background: 0xeaf0ff,
+  ambient: 2.0,
+  violet: 55,
+  blue: 45,
+  atmosphere: 0.32,
+  ringOne: 0x7774ca,
+  ringTwo: 0x43a9d9,
+  star: 0x7378ae,
+  starOpacity: 0.48
+};
+
+function applyTheme(light) {
+
+  const settings = light
+    ? lightSettings
+    : darkSettings;
+
+  scene.background.setHex(settings.background);
+
+  ambient.intensity = settings.ambient;
+
+  violetLight.intensity = settings.violet;
+  blueLight.intensity = settings.blue;
+
+  atmosphere.material.opacity = settings.atmosphere;
+
+  ringOne.material.color.setHex(settings.ringOne);
+  ringTwo.material.color.setHex(settings.ringTwo);
+
+  starMaterial.color.setHex(settings.star);
+  starMaterial.opacity = settings.starOpacity;
+
+  document.body.classList.toggle("light", light);
+
+  toggle.textContent = light ? "🌙" : "☀️";
+
+  toggle.setAttribute(
+    "aria-label",
+    light ? "Switch to dark mode" : "Switch to light mode"
+  );
+
+  try {
+    localStorage.setItem(
+      "little-universe-theme",
+      light ? "light" : "dark"
+    );
+  } catch (e) {}
+
+}
+
+let savedTheme = "dark";
+
+try {
+  savedTheme =
+    localStorage.getItem("little-universe-theme") || "dark";
+} catch (e) {}
+
+isLight = savedTheme === "light";
+
+applyTheme(isLight);
+
+toggle.addEventListener("click", () => {
+
+  isLight = !isLight;
+
+  applyTheme(isLight);
+
+});
+
+// DRAG
 
 let dragging = false;
-
 let previousX = 0;
 let previousY = 0;
 
@@ -393,10 +535,7 @@ surface.addEventListener("pointermove", e => {
   targetY += dx * 0.009;
   targetX += dy * 0.009;
 
-  targetX = Math.max(
-    -1.2,
-    Math.min(1.2, targetX)
-  );
+  targetX = Math.max(-1.2, Math.min(1.2, targetX));
 
   previousX = e.clientX;
   previousY = e.clientY;
@@ -431,7 +570,8 @@ function animate() {
   universe.rotation.x +=
     (targetX - universe.rotation.x) * 0.06;
 
-  ringGroup.rotation.z = Math.sin(time * 0.2) * 0.08;
+  ringGroup.rotation.z =
+    Math.sin(time * 0.2) * 0.08;
 
   particleGroup.children.forEach(p => {
 
